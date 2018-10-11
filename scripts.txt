@@ -1,0 +1,697 @@
+
+-- Criação das tabelas
+
+CREATE TABLE Pessoa (
+	ID SERIAL,
+	Nome VARCHAR(100) NOT NULL,
+	Rua VARCHAR(100) NOT NULL,
+	Bairro VARCHAR(100) NOT NULL,
+	UF VARCHAR(50) NOT NULL,
+	Numero INT NOT NULL,
+	Cidade VARCHAR(100) NOT NULL,
+	PRIMARY KEY(ID)
+)
+;
+
+CREATE TABLE PessoaTelefone(
+	IDPessoa SERIAL,
+	Telefone VARCHAR(20),
+	PRIMARY KEY(IDPessoa,Telefone),
+	FOREIGN KEY(IDPessoa) REFERENCES Pessoa(ID)
+)
+;
+
+CREATE TABLE PessoaFisica(
+	IDPessoa SERIAL,
+	CPF VARCHAR(20) NOT NULL,
+	RG VARCHAR(50) NOT NULL,
+	PRIMARY KEY(IDPessoa),
+	FOREIGN KEY(IDPessoa) REFERENCES Pessoa(ID)
+)
+;
+
+CREATE TABLE PessoaJuridica(
+	IDPessoa SERIAL,
+	InscricaoEsdatual VARCHAR(50) NOT NULL,
+	RazaoSocial VARCHAR(50) NOT NULL,
+	CNPJ VARCHAR(50) NOT NULL,	
+	PRIMARY KEY(IDPessoa),
+	FOREIGN KEY(IDPessoa) REFERENCES Pessoa(ID)
+)
+;
+
+CREATE TABLE Funcionario(
+
+	NCTPS SERIAL,
+	Salario REAL NOT NULL,
+	CPF VARCHAR(50) NOT NULL,
+	Nome VARCHAR(100) NOT NULL,
+	DataAdmissao Date NOT NULL, 
+	CEP VARCHAR(20) NOT NULL,
+	PRIMARY KEY(NCTPS)
+		
+)
+;
+
+CREATE TABLE FuncionarioTelefone(
+
+	NCTPS SERIAL,
+	Telefone VARCHAR(50) NOT NULL,
+	PRIMARY KEY(NCTPS, Telefone),
+	FOREIGN KEY(NCTPS) REFERENCES Funcionario(NCTPS)
+	
+)
+;
+
+CREATE TABLE Caixa(
+	ID SERIAL,
+	ValorAbertura REAL NOT NULL,
+	ValorFechamento REAL NOT NULL,
+	DataAbertura DATE NOT NULL,
+	DataFechamento DATE NOT NULL,
+	HoraAbertura TIME NOT NULL,
+	HoraFechamento TIME NOT NULL,
+	NCTPS SERIAL NOT NULL,
+	PRIMARY KEY(ID),
+	FOREIGN KEY(NCTPS) REFERENCES Funcionario(NCTPS)
+	
+)
+;
+
+CREATE TABLE CupomFiscal(
+	NCupom SERIAL NOT NULL,
+	ChaveAcesso VARCHAR(44) NOT NULL,
+	ValorTotal REAL NOT NULL,
+	Data DATE NOT NULL,
+	Hora TIME NOT NULL, 
+	IDPessoaFisica SERIAL NOT NULL, 
+	IDCaixa SERIAL NOT NULL,	
+	PRIMARY KEY(NCupom),
+	FOREIGN KEY(IDPessoaFisica) REFERENCES PessoaFisica(IDPessoa),
+	FOREIGN KEY(IDCaixa) REFERENCES Caixa(ID) 
+)
+;
+
+CREATE TABLE Pagamento(
+	ID SERIAL,
+	Data DATE NOT NULL,
+	Valor REAL NOT NULL,
+	IDPessoa SERIAL NOT NULL,
+	NCupom SERIAL,	
+	PRIMARY KEY(ID),
+	FOREIGN KEY(IDPessoa) REFERENCES Pessoa(ID),
+	FOREIGN KEY(NCupom) REFERENCES CupomFiscal(NCupom)
+)
+;
+
+CREATE TABLE PagamentoCheque(
+	IDPagamento SERIAL,
+	NCheque INT NOT NULL,
+	PRIMARY KEY(IDPagamento),
+	FOREIGN KEY(IDPagamento) REFERENCES Pagamento(ID)
+);
+CREATE TABLE PagamentoCartao(
+	IDPagamento SERIAL,
+	NumeroParcelas INT NOT NULL,
+	PRIMARY KEY(IDPagamento),
+	FOREIGN KEY(IDPagamento) REFERENCES Pagamento(ID)
+)
+;
+
+CREATE TABLE PagamentoAvista(
+	IDPagamento SERIAL,
+	DataEfetivacao DATE NOT NULL,
+	PRIMARY KEY(IDPagamento),
+	FOREIGN KEY(IDPagamento) REFERENCES Pagamento(ID)
+);
+
+CREATE TABLE NotaFiscal(
+	NNota SERIAL, 
+	Serie INT NOT NULL,
+	ChaveAcesso VARCHAR(44) NOT NULL,
+	IDPessoa SERIAL,
+	IDPessoaJuridica SERIAL,
+	DataEmissao DATE NOT NULL,
+	PRIMARY KEY(NNota),
+	FOREIGN KEY(IDPessoa) REFERENCES Pessoa(ID),
+	FOREIGN KEY(IDPessoaJuridica) REFERENCES PessoaJuridica(IDPessoa) 
+)
+;
+
+CREATE TABLE Produto(
+	ID SERIAL, 
+	Validade Date NOT NULL,
+	Valor REAL NOT NULL,
+	Descricao VARCHAR(100) NOT NULL,
+	PRIMARY KEY(ID)	
+)
+;
+
+CREATE TABLE Venda(
+	ID SERIAL,
+	Data DATE NOT NULL,
+	TipoVenda VARCHAR(100) NOT NULL,
+	Valor REAL NOT NULL,
+	NNota SERIAL,
+	NCupom SERIAL,	
+	PRIMARY KEY(ID),
+	FOREIGN KEY(NNota) REFERENCES NotaFiscal(NNota),
+	FOREIGN KEY(NCupom) REFERENCES CupomFiscal(NCupom) 
+)
+;
+
+
+CREATE TABLE Sangramento(
+	Valor REAL UNIQUE NOT NULL,
+	Data DATE UNIQUE NOT NULL,
+	Hora TIME NOT NULL,	
+	PRIMARY KEY(Valor,Data)
+)
+;
+
+CREATE TABLE VendaProduto(
+	IDProduto SERIAL,
+	IDVenda SERIAL,
+	Quantidade INT NOT NULL,	
+	PRIMARY KEY(IDProduto, IDVenda),
+	FOREIGN KEY(IDProduto) REFERENCES Produto(ID),
+	FOREIGN KEY(IDVenda) REFERENCES Venda(ID)
+)
+;
+
+CREATE TABLE SangramentoCaixa(
+	IDCaixa SERIAL,
+	Valor REAL,	
+	Data DATE NOT NULL,
+	PRIMARY KEY(IDCaixa, Valor, Data),
+	FOREIGN KEY(IDCaixa) REFERENCES Caixa(ID),
+	FOREIGN KEY(Valor) REFERENCES Sangramento(Valor),
+	FOREIGN KEY(Data) REFERENCES Sangramento(Data)
+
+)
+;
+
+-- Povoamento do banco de dados. 
+
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(1, 'Jesica', 'José Marrocos', 'Salesianos', 'Ceará', 267, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(2, 'David', 'Marechal Floriano', 'Triangulo', 'Ceará', 45, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(3, 'Thiago', 'Leão Sampaio', 'Triangulo', 'Ceará', 70, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(4, 'Ana', 'Macedo Cabral', 'Franciscanos', 'Ceará', 69, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(5, 'Marcos', 'Senhor Martins', 'João Cabral', 'Ceará', 12, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(6, 'Joana', 'Marechal Floriano', 'Triangulo', 'Ceará', 456, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(7, 'Shopping da Segurança', 'Marechal Floriano', 'Triangulo', 'Ceará', 1023, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(8, 'DTS Distribuidaora', 'Leão Sampaio', 'Triangulo', 'Ceará', 1052, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(9, 'DSA Distribuidora', 'Gastão de Medeiros Forte', 'Bela Vista', 'Paraiba', 1243, 'Sousa');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(10, 'Rio Piranhas Distribuidora', 'Gastão de Medeiros Forte', 'Sorrilandia II', 'Paraiba', 1098, 'Sousa');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(11, 'Distribuidora Pau Brasil', 'Gastão de Medeiros Forte', 'Bela Vista', 'Paraiba', 1245, 'Sousa');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(12, 'DSG Distribuidora', 'Rua Projetada', 'Andre Gadelha', 'Paraiba', 12, 'Sousa');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(13, 'ISIS', 'Rua Projetada', 'Varzea da Cruz', 'Paraiba', 2, 'Sousa');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(14, 'JOAO DA BUDEGA', 'Rua Projetada', 'Varzea da Cruz', 'Paraiba', 90, 'Sousa');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(15, 'Paulo', 'José Marrocos', 'Salesianos', 'Ceará', 360, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(16, 'Maria', 'Senhora Santana', 'Salesianos', 'Ceará', 80, 'Juazeiro do Norte');
+INSERT INTO Pessoa(ID, Nome, Rua, Bairro, UF, Numero, Cidade) VALUES(17, 'Matheus', 'São Paulo', 'Franciscanos', 'Ceará', 54, 'Juazeiro do Norte');
+
+
+INSERT INTO PessoaTelefone VALUES(1, '(88)842-978319');
+INSERT INTO PessoaTelefone VALUES(1, '(88)714-257705');
+INSERT INTO PessoaTelefone VALUES(2, '(88)243-769549');
+INSERT INTO PessoaTelefone VALUES(3, '(88)785-972804');
+INSERT INTO PessoaTelefone VALUES(3, '(88)572-102230');
+INSERT INTO PessoaTelefone VALUES(4, '(88)533-809854');
+INSERT INTO PessoaTelefone VALUES(5, '(88)616-113394');
+INSERT INTO PessoaTelefone VALUES(6, '(88)513-829454');
+INSERT INTO PessoaTelefone VALUES(7, '(88)617-113454');
+INSERT INTO PessoaTelefone VALUES(8, '(88)133-846851');
+INSERT INTO PessoaTelefone VALUES(9, '(88)636-127299');
+INSERT INTO PessoaTelefone VALUES(10, '(83)896-127299');
+INSERT INTO PessoaTelefone VALUES(11, '(83)832-127229');
+INSERT INTO PessoaTelefone VALUES(12, '(83)537-127299');
+INSERT INTO PessoaTelefone VALUES(13, '(83)432-127299');
+INSERT INTO PessoaTelefone VALUES(14, '(83)132-127299');
+
+
+
+
+INSERT INTO PessoaFisica VALUES(1, '149.595.603-20', '184205657');
+INSERT INTO PessoaFisica VALUES(2, '039.299.573-53', '183391937');
+INSERT INTO PessoaFisica VALUES(3, '768.685.843-00', '177363447');
+INSERT INTO PessoaFisica VALUES(4, '909.896.243-23', '422366596');
+INSERT INTO PessoaFisica VALUES(5, '190.779.353-40', '186110303');
+INSERT INTO PessoaFisica VALUES(6, '339.299.573-51', '183491731');
+INSERT INTO PessoaFisica VALUES(7, '668.685.843-12', '147353442');
+INSERT INTO PessoaFisica VALUES(8, '809.896.243-25', '132365596');
+INSERT INTO PessoaFisica VALUES(9, '290.779.353-48', '586316303');
+
+
+
+
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(10,'66888556-4', 'Mega Import', '87.027.742/0001-99');
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(11,'31686725-0', 'Intelbras', '75.889.884/0001-86');
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(12,'77408403-0', 'DSA Alimentos', '67.516.156/0001-09');
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(13,'25686071-8', 'Rio Piranhas', '39.430.149/0001-46');
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(14,'02334539-0', 'Pau Brasil Bebidas', '69.020.061/0001-17');
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(15,'63429428-8', 'Vo Ita Frios', '76.210.487/0001-07');
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(16,'71986138-1', 'Laticionio Belo Vale', '94.541.261/0001-62');
+INSERT INTO PessoaJuridica (idpessoa, inscricaoesdatual, razaosocial, cnpj)VALUES(17,'09485138-1', 'A Budega', '24.341.431/0001-23');
+
+
+INSERT INTO Funcionario(NCTPS, Salario, CPF, Nome, DataAdmissao, CEP)VALUES(1, 1000, '925.376.433-30', 'Santhiago', '2018-09-01', '63043-200');
+INSERT INTO Funcionario(NCTPS, Salario, CPF, Nome, DataAdmissao, CEP)VALUES(2, 1000, '926.343.432-10', 'Paulo César', '2018-02-12', '63043-200');
+INSERT INTO Funcionario(NCTPS, Salario, CPF, Nome, DataAdmissao, CEP)VALUES(3, 1500, '245.276.533-50', 'Diego', '2018-02-04', '63043-200');
+INSERT INTO Funcionario(NCTPS, Salario, CPF, Nome, DataAdmissao, CEP)VALUES(4, 1300, '925.376.423-20', 'Antônio Marcos', '2018-04-08', '63043-200');
+INSERT INTO Funcionario(NCTPS, Salario, CPF, Nome, DataAdmissao, CEP)VALUES(5, 1100, '825.636.153-40', 'Efraim', '2018-09-01', '63043-200');
+
+INSERT INTO FuncionarioTelefone VALUES(1, '(88)927-72-8768');
+INSERT INTO FuncionarioTelefone VALUES(1, '(88)803-41-6639');
+INSERT INTO FuncionarioTelefone VALUES(2, '(88)252-78-5944');
+INSERT INTO FuncionarioTelefone VALUES(2, '(88)941-71-3680');
+INSERT INTO FuncionarioTelefone VALUES(3, '(88)994-23-5908');
+INSERT INTO FuncionarioTelefone VALUES(4, '(88)613-98-2486');
+INSERT INTO FuncionarioTelefone VALUES(5, '(88)662-74-3102');
+INSERT INTO FuncionarioTelefone VALUES(5, '(88)412-94-6447');
+INSERT INTO FuncionarioTelefone VALUES(3, '(88)234-62-3861');
+
+
+INSERT INTO Caixa (ID, valorabertura, valorfechamento, dataabertura, datafechamento, horaabertura, horafechamento, nctps)VALUES(1, 45, 1900, '2018-08-12', '2018-08-12', '06:30:00.00', '19:00:00.00', 1);
+INSERT INTO Caixa (ID, valorabertura, valorfechamento, dataabertura, datafechamento, horaabertura, horafechamento, nctps)VALUES(2, 42, 1800, '2018-08-06', '2018-08-06', '06:30:00.00', '19:00:00.00', 2);
+INSERT INTO Caixa (ID, valorabertura, valorfechamento, dataabertura, datafechamento, horaabertura, horafechamento, nctps)VALUES(3, 90, 6000, '2018-06-03', '2018-06-03', '06:30:00.00', '19:00:00.00', 3);
+INSERT INTO Caixa (ID, valorabertura, valorfechamento, dataabertura, datafechamento, horaabertura, horafechamento, nctps)VALUES(4, 34, 1300, '2018-04-16', '2018-04-16', '06:30:00.00', '19:00:00.00', 4);
+INSERT INTO Caixa (ID, valorabertura, valorfechamento, dataabertura, datafechamento, horaabertura, horafechamento, nctps)VALUES(5, 54, 3421, '2016-05-19', '2016-05-19', '06:30:00.00', '19:00:00.00', 5);
+
+
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(1, '9485 2248 2496 7242 3358 8898 2639', 280, '2018-08-06', '14:12:00.00', 2, 1);
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(2, '7710 7740 7452 4463 7112 2966 7774', 432, '2018-08-07', '08:23:00.00', 5, 2);
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(3, '3781 7297 1131 4814 1213 4874 8820', 342, '2018-08-08', '09:59:08.00', 7, 3);
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(4, '2445 2924 4997 5340 9423 8957 4149', 34, '2018-08-09', '07:43:09.00', 9, 5);
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(5, '7512 9751 5648 7928 2918 4057 5889', 24, '2018-08-10', '13:32:00.00', 3, 4);
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(6, '9524 2037 9698 1817 1940 1569 3588', 120, '2018-08-11', '16:24:34.00', 8, 4);
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(7, '4182 7683 4529 8230 2149 5736 7853', 405, '2018-08-12', '18:23:12.00', 6, 5);
+INSERT INTO CupomFiscal (NCupom, chaveacesso, valortotal, data, hora, idpessoafisica,idcaixa)VALUES(8, '1790 8048 3187 1882 9859 7877 4484', 298, '2018-08-13', '18:59:45.00', 2, 2);
+
+
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(1,'2018-09-17', 280, 2, 1);
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(2, '2018-02-18', 432, 3, 2);
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(3, '2018-01-12', 342, 6, 3);
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(4, '2017-09-23', 34, 7, 5);
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(5, '2016-03-17', 24, 1, 4);
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(6, '2017-09-19', 120, 4, 7);
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(7, '2018-05-04', 405, 8, 6);
+INSERT INTO Pagamento(ID, data, valor, idpessoa, ncupom)VALUES(8, '2018-07-10', 298, 5, 8);
+	
+
+INSERT INTO PagamentoCheque(idpagamento, ncheque)Values(2, 002);
+INSERT INTO PagamentoCheque(idpagamento, ncheque)Values(1, 003);
+INSERT INTO PagamentoCheque(idpagamento, ncheque)Values(7, 004);
+  
+
+INSERT INTO PagamentoCartao(idpagamento, numeroparcelas)Values(3, 4);
+INSERT INTO PagamentoCartao(idpagamento, numeroparcelas)Values(4, 3);
+INSERT INTO PagamentoCartao(idpagamento, numeroparcelas)Values(8, 4);
+
+
+INSERT INTO PagamentoAvista(idpagamento, dataefetivacao)VALUES(5,'2017-09-24');
+INSERT INTO PagamentoAvista(idpagamento, dataefetivacao)VALUES(6,'2016-03-19');
+INSERT INTO PagamentoAvista(idpagamento, dataefetivacao)VALUES(8,'2016-03-19');
+
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(1, 1,'9485 2248 2496 7242 3358 8898 2639', 1, 10,'2018-09-17');
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(2, 2,'7710 7740 7452 4463 7112 2966 7774', 2, 11,'2018-09-02');
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(3, 1,'3781 7297 1131 4814 1213 4874 8820', 3, 12,'2018-09-05');
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(4, 1,'2445 2924 4997 5340 9423 8957 4149', 1, 13,'2018-09-09');
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(5, 1,'7512 9751 5648 7928 2918 4057 5889', 3, 14,'2018-09-08');
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(6, 1,'9524 2037 9698 1817 1940 1569 3588', 2, 15,'2018-09-06');
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(7, 1,'4182 7683 4529 8230 2149 5736 7853', 1, 16,'2018-09-01');
+INSERT INTO NotaFiscal(NNota, serie, chaveacesso, idpessoa, idpessoajuridica, dataemissao)VALUES(8, 1,'1790 8048 3187 1882 9859 7877 4484', 3, 14,'2018-09-11');
+
+
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(1, '2018-09-13', 4.89, 'Arroz Namorado');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(2, '2018-09-11', 2.20, 'Macarrão Gostoso');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(3, '2018-09-15', 4.50, 'Oléo de Soja');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(4, '2018-09-17', 4.35, 'Arror Parborizado');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(5, '2018-09-15', 1.80, 'Vitamilho Dona Benta');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(6, '2018-09-18', 2.00, 'Vitamilho flocão');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(7, '2018-09-19', 2.20, 'Papel Higienico');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(8, '2018-09-17', 3.89, 'Feijão de Corda');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(9, '2018-09-16', 4.00, 'Feijão Mulatinho');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(10, '2018-09-13', 3.90, 'Açucar refinado');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(11, '2023-09-13', 120.00, 'Camera Intelbras HD');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(12, '2024-09-17', 300.00, 'DVR Hikvision');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(13, '2021-09-15', 180.00, 'Camera IP 4k HIK');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(14, '2024-09-18', 189.00, 'Central De Alarme ecp');
+INSERT INTO Produto(ID, Validade, Valor, Descricao)VALUES(15, '2027-09-16', 165.00, 'Central de Choque Monitorada');
+
+-- Removendo a restrição NOT NULL da tabela venda.
+
+ALTER TABLE Venda ALTER COLUMN NCupom DROP NOT NULL;
+ALTER TABLE Venda ALTER COLUMN NNota DROP NOT NULL;
+
+
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(1, '2018-08-06','Consumidor', 232, null, 1);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(2, '2017-07-07','Consumidor', 22, null, 2);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(3, '2018-06-05','Consumidor', 21, null, 3);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(4, '2017-03-26','Consumidor', 32, null, 4);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(5, '2018-11-16','Consumidor', 432, null, 5);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(6, '2018-12-21','Consumidor', 453, null, 6);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(7, '2018-08-04','Consumidor', 567, null, 7);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(8, '2017-08-06','Consumidor', 278, null, 8);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(9, '2018-08-06','Empresa', 567, 3, null);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(10, '2017-07-07','Empresa', 656, 4, null);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(11, '2018-06-05','Empresa', 678, 5, null);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(12, '2017-03-26','Empresa', 142, 6, null);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(13, '2018-11-16','Empresa', 432, 7, null);
+INSERT INTO Venda (ID, Data, TipoVenda, Valor, NNota, NCupom)VALUES(14, '2018-12-21','Empresa', 890, 8, null);
+
+
+
+INSERT INTO Sangramento (Valor, Data, Hora)VALUES(1800, '2018-06-05','18:32:31.00');
+INSERT INTO Sangramento (Valor, Data, Hora)VALUES(1400, '2018-06-06','17:12:24.00');
+INSERT INTO Sangramento (Valor, Data, Hora)VALUES(1000, '2018-06-07','14:23:34.00');
+INSERT INTO Sangramento (Valor, Data, Hora)VALUES(1100, '2018-06-08','15:25:12.00');
+INSERT INTO Sangramento (Valor, Data, Hora)VALUES(1120, '2018-06-09','15:30:57.00');
+INSERT INTO Sangramento (Valor, Data, Hora)VALUES(1300, '2018-06-10','17:58:59.00');
+
+
+
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(13, 2, 8);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(1, 3, 15);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(3, 4, 5);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(14, 5, 4);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(2, 6, 20);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(4, 7, 23);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(6, 8, 4);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(5, 9, 5);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(8, 10, 80);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(7, 11, 190);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(10, 12, 8);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(9, 13, 3);
+INSERT INTO VendaProduto (IDProduto, IDVenda, Quantidade)VALUES(10, 14, 16);
+
+
+
+INSERT INTO SangramentoCaixa (IDCaixa, Valor, Data)VALUES(1, 1000, '2018-06-07');
+INSERT INTO SangramentoCaixa (IDCaixa, Valor, Data)VALUES(2, 1400, '2018-06-06');
+INSERT INTO SangramentoCaixa (IDCaixa, Valor, Data)VALUES(3, 1300, '2018-06-10');
+INSERT INTO SangramentoCaixa (IDCaixa, Valor, Data)VALUES(4, 1800, '2018-06-05');
+INSERT INTO SangramentoCaixa (IDCaixa, Valor, Data)VALUES(5, 1100, '2018-06-08');
+
+
+-- Criação dos índices das respectivas tabelas.
+
+
+CREATE INDEX pessoaindice ON Pessoa(ID);
+
+CREATE INDEX pessoatelindice ON PessoaTelefone(IDPessoa,Telefone);
+
+CREATE INDEX pessoafisicaindice ON PessoaFisica(IDPessoa);
+
+CREATE INDEX pessoajuridicaindice ON PessoaJuridica(IDPessoa);
+
+CREATE INDEX funcionarioindice ON Funcionario(NCTPS);
+
+CREATE INDEX funcionariotelindice ON FuncionarioTelefone(NCTPS, Telefone);
+
+CREATE INDEX caixaindice ON Caixa(ID);
+
+CREATE INDEX cupomfiscalindice ON CupomFiscal(NCupom);
+
+CREATE INDEX pagamentoindice ON Pagamento(ID);
+
+CREATE INDEX pagamentochequeindice ON PagamentoCheque(IDPagamento);
+
+CREATE INDEX pagamentocartaiindice ON PagamentoCartao(IDPagamento);
+
+CREATE INDEX pagamentoavistaindice ON PagamentoAvista(IDPagamento);
+
+CREATE INDEX notafiscalindice ON NotaFiscal(NNota);
+
+CREATE INDEX produtoindice ON Produto(ID);
+
+CREATE INDEX vendaindice ON Venda(ID);
+
+CREATE INDEX sangramentoindice ON Sangramento(Valor,Data);
+
+CREATE INDEX vendaprodutoindice ON VendaProduto(IDProduto,IDVenda);
+
+CREATE INDEX sangramentocaixaindice ON SangramentoCaixa(IDCaixa, Valor, Data);
+
+-- Visões 
+
+Create view fichaCliente as
+select pf.cpf, p.nome,p.uf as Estado, p.cidade,p.bairro,p.rua, p.numero as NumeroCasa, pg.data as DataPagamento,pg.valor as ValorCompra, pc.ncheque
+from Pessoa p, PessoaFisica pf, Pagamento pg, PagamentoCheque pc
+where p.id=pf.idPessoa and pg.idPessoa=p.id and pg.id=pc.idPagamento;
+
+create view pagamentosAvista as
+select p.nome, pg.data as dataCompra, pg.valor as ValorCompra, pa.dataEfetivacao
+from Pessoa p, Pagamento pg, pagamentoAvista pa
+where p.id=pg.idPessoa and pg.id=pa.idPagamento;
+
+create view pagamentoscartao as 
+SELECT p.nome, pg.data as datapagamento, pg.valor as valorcompra
+FROM pessoa p, pagamento pg, pagamentocartao pc
+WHERE p.id = pg.idpessoa and pg.id = pc.idpagamento;
+
+Create  view public.caixafuncionario as 
+SELECT DISTINCT *
+FROM caixa c NATURAL JOIN funcionario f;
+
+-- Consultas
+
+select nf.nnota, nf.dataemissao
+from pessoajuridica pf join  notafiscal nf on(pf.idpessoa=nf.idpessoajuridica) 
+where pf.cnpj= '87.027.742/0001-99';
+
+
+select p.descricao, p.valor
+from produto p join vendaProduto vp on(p.id=vp.idProduto) 		
+where vp.quantidade >= 3;
+
+
+select p.nome as NomePessoa, pg.valor as ValorCompra 
+from Pessoa p, Pagamento pg , PagamentoCartao pc         
+where p.id = pg.idPessoa and pg.id=pc.idPagamento and pc.numeroParcelas=4
+order by pg.valor desc;
+
+
+select nome, id
+from Pessoa 
+where id in(                                   
+	
+        (select pg.idPessoa 
+	from Pagamento pg, PagamentoCartao pc
+	where pg.id=pc.idPagamento)
+Intersect 
+	(select pg.idPessoa 
+	from pagamento pg, PagamentoAvista pc
+	where pg.id=pc.idPagamento)
+	 
+)
+order by id;
+
+
+select p.nome as NomePessoa, pf.telefone as TelefonePessoa
+from Pessoa p join PessoaTelefone pf on(p.id=pf.idPessoa )     
+where p.nome like 'M%';
+
+
+select p.id, p.nome, count(p.id) as QuantidadeTelefones
+from Pessoa p join PessoaTelefone pf on(p.id=pf.idPessoa)
+group by p.id, p.nome                
+having count(*)>1
+order by p.id,p.nome;
+
+
+create view FechamentoCaixa as
+select f.nome, c.valorFechamento     
+from funcionario f join caixa c on (f.nctps=c.nctps)
+group by c.valorFechamento, f.nome
+order by c.valorFechamento desc;
+
+
+select v.id, p.descricao, v.data			
+from venda v, vendaProduto vp, produto p
+where v.id= vp.idVenda and vp.idProduto = p.id and v.nnota is null and v.valor >250;
+
+
+select p.nome as NomePessoaJuridica, pj.razaosocial, nf.nnota as NúmeroNotaFiscal
+from Pessoa p , PessoaJuridica pj, NotaFiscal nf, Venda v
+where p.id=pj.idPessoa and v.nnota=nf.nnota and nf.idPessoajuridica=pj.idPessoa and v.nnota is not null and v.valor < 999
+order by p.nome desc;
+
+
+select p.descricao        
+from Produto p, vendaProduto vp , venda v
+where p.id=vp.idProduto and vp.idVenda=v.id and v.tipoVenda = 'Consumidor' and p.descricao like 'A%';
+
+
+select 
+	Max(salario) as MaiorSalario,
+	Min(Salario) as MenorSalario,   
+	AVG(Salario) as MediaSalarial,
+	SUM(Salario) as Total
+from Funcionario
+where dataAdmissao = '2018-09-01';
+
+
+select nome, salario	
+from Funcionario
+group by nome, salario     
+having (MIN(salario)>1000)
+order by salario desc;
+
+
+
+(SELECT idpagamento, p.valor FROM Pagamentocheque pc, Pagamento p where p.id = pc.idpagamento and valor > 280)
+union 
+(SELECT IDPagamento, p.valor FROM PagamentoCartao pca, Pagamento p where p.id = pca.idpagamento and valor > 280);
+
+
+SELECT Nome FROM funcionario f
+WHERE NOT EXISTS
+(SELECT * FROM funcionarioTelefone FT
+WHERE F.NCTPS = FT.NCTPS);
+
+
+SELECT pc.IdPagamento, pc.NumeroParcelas FROM pagamentoCartao pc
+WHERE EXISTS
+(SELECT * FROM pagamento p);
+
+
+SELECT pc.IdPagamento, pc.NCheque FROM pagamentoCheque pc
+WHERE EXISTS
+(SELECT * FROM pagamento p);
+
+
+select p.nome, pg.valor                   
+from Pessoa p join Pagamento pg on(p.id=pg.idPessoa)
+where pg.valor > ALL
+(Select pg.valor
+from Pessoa p join Pagamento pg on(p.id=pg.idPessoa)
+where p.nome= 'David' or p.nome= 'Joana');
+
+-- Gatilhos 
+
+CREATE OR REPLACE FUNCTION descontoConcedido()
+	RETURNS TRIGGER AS $$
+	DECLARE		
+		desconto real = 300;
+	BEGIN
+		SELECT INTO desconto FROM Venda
+		WHERE desconto > NEW.ID
+		GROUP BY ID;
+
+		UPDATE Venda SET valor = valor * 0.97 WHERE id = NEW.ID;
+
+		RETURN NULL;
+	END
+	$$ 
+	LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER desconta
+AFTER INSERT ON Venda
+FOR EACH ROW
+EXECUTE PROCEDURE descontoConcedido();
+
+CREATE OR REPLACE FUNCTION descontoPagamentoCartao()
+	RETURNS TRIGGER AS $$
+	DECLARE		
+		desconto real = 100;
+	BEGIN
+		SELECT INTO desconto FROM PagamentosCartao
+		WHERE desconto > NEW.ID;
+		
+
+		UPDATE Pagamento SET valor = valor * 0.99 WHERE id = NEW.ID;
+
+		RETURN NULL;
+	END
+	$$ 
+	LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER descontoCartao
+AFTER INSERT ON Pagamento
+FOR EACH ROW
+EXECUTE PROCEDURE descontoPagamentoCartao();
+
+
+CREATE OR REPLACE FUNCTION descontoAvistaPagamento()
+	RETURNS TRIGGER AS $$
+	DECLARE		
+		desconto real = 100;
+	BEGIN
+		SELECT INTO desconto FROM PagamentosAvista
+		WHERE desconto > NEW.ID;
+		
+
+		UPDATE Pagamento SET valor = valor * 0.98 WHERE id = NEW.ID;
+
+		RETURN NULL;
+	END
+	$$ 
+	LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER descontoAvista
+AFTER INSERT ON Pagamento
+FOR EACH ROW
+EXECUTE PROCEDURE descontoAvistaPagamento();
+
+-- Procedimentos armazenados
+
+CREATE OR REPLACE FUNCTION totalDasVendas (DATE) RETURNS Venda.valor%type
+AS $$
+	DECLARE
+		dia ALIAS FOR $1;
+		totalVendas Venda.Valor%type := 0;
+		valoresVenda Venda.Valor%type;
+		ponteiro REFCURSOR;
+	BEGIN
+		OPEN ponteiro FOR 
+		SELECT valor FROM Venda WHERE Data=dia;
+		FETCH ponteiro INTO valoresVenda;
+		WHILE FOUND LOOP
+			totalVendas := totalVendas + valoresVenda;
+			FETCH ponteiro INTO valoresVenda;
+		END LOOP;
+		CLOSE ponteiro;
+		RETURN totalVendas;
+	END
+$$
+LANGUAGE PLPGSQL;
+
+
+CREATE OR REPLACE FUNCTION totalCaixaFuncionarioData (DATE, INTEGER) RETURNS Caixa.ValorFechamento%type
+AS $$
+	DECLARE
+		dia ALIAS FOR $1;
+		nCarteira ALIAS FOR $2;
+		soma Caixa.ValorFechamento%type := 0;
+		valor Caixa.ValorFechamento%type;
+		curs REFCURSOR;
+	BEGIN
+		OPEN curs FOR SELECT ValorFechamento FROM Caixa WHERE DataFechamento = dia and NCTPS = nCarteira;
+		FETCH curs INTO valor;
+		WHILE FOUND LOOP
+			soma := soma + valor;
+			FETCH curs INTO valor;
+		END LOOP;
+		CLOSE curs;
+		RETURN soma;
+	END
+$$
+LANGUAGE PLPGSQL;
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
