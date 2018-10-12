@@ -1,0 +1,292 @@
+-- Criação dos índices das respectivas tabelas.
+
+
+CREATE INDEX pessoaindice ON Pessoa(ID);
+
+CREATE INDEX pessoatelindice ON PessoaTelefone(IDPessoa,Telefone);
+
+CREATE INDEX pessoafisicaindice ON PessoaFisica(IDPessoa);
+
+CREATE INDEX pessoajuridicaindice ON PessoaJuridica(IDPessoa);
+
+CREATE INDEX funcionarioindice ON Funcionario(NCTPS);
+
+CREATE INDEX funcionariotelindice ON FuncionarioTelefone(NCTPS, Telefone);
+
+CREATE INDEX caixaindice ON Caixa(ID);
+
+CREATE INDEX cupomfiscalindice ON CupomFiscal(NCupom);
+
+CREATE INDEX pagamentoindice ON Pagamento(ID);
+
+CREATE INDEX pagamentochequeindice ON PagamentoCheque(IDPagamento);
+
+CREATE INDEX pagamentocartaiindice ON PagamentoCartao(IDPagamento);
+
+CREATE INDEX pagamentoavistaindice ON PagamentoAvista(IDPagamento);
+
+CREATE INDEX notafiscalindice ON NotaFiscal(NNota);
+
+CREATE INDEX produtoindice ON Produto(ID);
+
+CREATE INDEX vendaindice ON Venda(ID);
+
+CREATE INDEX sangramentoindice ON Sangramento(Valor,Data);
+
+CREATE INDEX vendaprodutoindice ON VendaProduto(IDProduto,IDVenda);
+
+CREATE INDEX sangramentocaixaindice ON SangramentoCaixa(IDCaixa, Valor, Data);
+
+-- Visões 
+
+Create view fichaCliente as
+select pf.cpf, p.nome,p.uf as Estado, p.cidade,p.bairro,p.rua, p.numero as NumeroCasa, pg.data as DataPagamento,pg.valor as ValorCompra, pc.ncheque
+from Pessoa p, PessoaFisica pf, Pagamento pg, PagamentoCheque pc
+where p.id=pf.idPessoa and pg.idPessoa=p.id and pg.id=pc.idPagamento;
+
+create view pagamentosAvista as
+select p.nome, pg.data as dataCompra, pg.valor as ValorCompra, pa.dataEfetivacao
+from Pessoa p, Pagamento pg, pagamentoAvista pa
+where p.id=pg.idPessoa and pg.id=pa.idPagamento;
+
+create view pagamentoscartao as 
+SELECT p.nome, pg.data as datapagamento, pg.valor as valorcompra
+FROM pessoa p, pagamento pg, pagamentocartao pc
+WHERE p.id = pg.idpessoa and pg.id = pc.idpagamento;
+
+Create  view public.caixafuncionario as 
+SELECT DISTINCT *
+FROM caixa c NATURAL JOIN funcionario f;
+
+-- Consultas
+
+select nf.nnota, nf.dataemissao
+from pessoajuridica pf join  notafiscal nf on(pf.idpessoa=nf.idpessoajuridica) 
+where pf.cnpj= '87.027.742/0001-99';
+
+
+select p.descricao, p.valor
+from produto p join vendaProduto vp on(p.id=vp.idProduto) 		
+where vp.quantidade >= 3;
+
+
+select p.nome as NomePessoa, pg.valor as ValorCompra 
+from Pessoa p, Pagamento pg , PagamentoCartao pc         
+where p.id = pg.idPessoa and pg.id=pc.idPagamento and pc.numeroParcelas=4
+order by pg.valor desc;
+
+
+select nome, id
+from Pessoa 
+where id in(                                   
+	
+        (select pg.idPessoa 
+	from Pagamento pg, PagamentoCartao pc
+	where pg.id=pc.idPagamento)
+Intersect 
+	(select pg.idPessoa 
+	from pagamento pg, PagamentoAvista pc
+	where pg.id=pc.idPagamento)
+	 
+)
+order by id;
+
+
+select p.nome as NomePessoa, pf.telefone as TelefonePessoa
+from Pessoa p join PessoaTelefone pf on(p.id=pf.idPessoa )     
+where p.nome like 'M%';
+
+
+select p.id, p.nome, count(p.id) as QuantidadeTelefones
+from Pessoa p join PessoaTelefone pf on(p.id=pf.idPessoa)
+group by p.id, p.nome                
+having count(*)>1
+order by p.id,p.nome;
+
+
+create view FechamentoCaixa as
+select f.nome, c.valorFechamento     
+from funcionario f join caixa c on (f.nctps=c.nctps)
+group by c.valorFechamento, f.nome
+order by c.valorFechamento desc;
+
+
+select v.id, p.descricao, v.data			
+from venda v, vendaProduto vp, produto p
+where v.id= vp.idVenda and vp.idProduto = p.id and v.nnota is null and v.valor >250;
+
+
+select p.nome as NomePessoaJuridica, pj.razaosocial, nf.nnota as NúmeroNotaFiscal
+from Pessoa p , PessoaJuridica pj, NotaFiscal nf, Venda v
+where p.id=pj.idPessoa and v.nnota=nf.nnota and nf.idPessoajuridica=pj.idPessoa and v.nnota is not null and v.valor < 999
+order by p.nome desc;
+
+
+select p.descricao        
+from Produto p, vendaProduto vp , venda v
+where p.id=vp.idProduto and vp.idVenda=v.id and v.tipoVenda = 'Consumidor' and p.descricao like 'A%';
+
+
+select 
+	Max(salario) as MaiorSalario,
+	Min(Salario) as MenorSalario,   
+	AVG(Salario) as MediaSalarial,
+	SUM(Salario) as Total
+from Funcionario
+where dataAdmissao = '2018-09-01';
+
+
+select nome, salario	
+from Funcionario
+group by nome, salario     
+having (MIN(salario)>1000)
+order by salario desc;
+
+
+
+(SELECT idpagamento, p.valor FROM Pagamentocheque pc, Pagamento p where p.id = pc.idpagamento and valor > 280)
+union 
+(SELECT IDPagamento, p.valor FROM PagamentoCartao pca, Pagamento p where p.id = pca.idpagamento and valor > 280);
+
+
+SELECT Nome FROM funcionario f
+WHERE NOT EXISTS
+(SELECT * FROM funcionarioTelefone FT
+WHERE F.NCTPS = FT.NCTPS);
+
+
+SELECT pc.IdPagamento, pc.NumeroParcelas FROM pagamentoCartao pc
+WHERE EXISTS
+(SELECT * FROM pagamento p);
+
+
+SELECT pc.IdPagamento, pc.NCheque FROM pagamentoCheque pc
+WHERE EXISTS
+(SELECT * FROM pagamento p);
+
+
+select p.nome, pg.valor                     
+from Pessoa p  join Pagamento pg on(p.id=pg.idPessoa)
+where pg.valor > ALL
+(Select pg.valor
+from Pessoa p join Pagamento pg on(p.id=pg.idPessoa)
+where p.nome= 'David' and pg.data='2018-08-17');
+
+-- Gatilhos 
+
+CREATE OR REPLACE FUNCTION descontoConcedido()
+	RETURNS TRIGGER AS $$
+	DECLARE		
+		desconto real = 300;
+	BEGIN
+		SELECT INTO desconto FROM Venda
+		WHERE desconto > NEW.ID
+		GROUP BY ID;
+
+		UPDATE Venda SET valor = valor * 0.97 WHERE id = NEW.ID;
+
+		RETURN NULL;
+	END
+	$$ 
+	LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER desconta
+AFTER INSERT ON Venda
+FOR EACH ROW
+EXECUTE PROCEDURE descontoConcedido();
+
+CREATE OR REPLACE FUNCTION descontoPagamentoCartao()
+	RETURNS TRIGGER AS $$
+	DECLARE		
+		desconto real = 100;
+	BEGIN
+		SELECT INTO desconto FROM PagamentosCartao
+		WHERE desconto > NEW.ID;
+		
+
+		UPDATE Pagamento SET valor = valor * 0.99 WHERE id = NEW.ID;
+
+		RETURN NULL;
+	END
+	$$ 
+	LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER descontoCartao
+AFTER INSERT ON Pagamento
+FOR EACH ROW
+EXECUTE PROCEDURE descontoPagamentoCartao();
+
+
+CREATE OR REPLACE FUNCTION descontoAvistaPagamento()
+	RETURNS TRIGGER AS $$
+	DECLARE		
+		desconto real = 100;
+	BEGIN
+		SELECT INTO desconto FROM PagamentosAvista
+		WHERE desconto > NEW.ID;
+		
+
+		UPDATE Pagamento SET valor = valor * 0.97 WHERE id = NEW.ID;
+
+		RETURN NULL;
+	END
+	$$ 
+	LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER descontoAvista
+AFTER INSERT ON Pagamento
+FOR EACH ROW
+EXECUTE PROCEDURE descontoAvistaPagamento();
+
+-- Procedimentos armazenados
+
+CREATE OR REPLACE FUNCTION totalDasVendas (DATE) RETURNS Venda.valor%type
+AS $$
+	DECLARE
+		dia ALIAS FOR $1;
+		totalVendas Venda.Valor%type := 0;
+		valoresVenda Venda.Valor%type;
+		ponteiro REFCURSOR;
+	BEGIN
+		OPEN ponteiro FOR 
+		SELECT valor FROM Venda WHERE Data=dia;
+		FETCH ponteiro INTO valoresVenda;
+		WHILE FOUND LOOP
+			totalVendas := totalVendas + valoresVenda;
+			FETCH ponteiro INTO valoresVenda;
+		END LOOP;
+		CLOSE ponteiro;
+		RETURN totalVendas;
+	END
+$$
+LANGUAGE PLPGSQL;
+
+
+CREATE OR REPLACE FUNCTION totalCaixaFuncionarioData (DATE, INTEGER) RETURNS Caixa.ValorFechamento%type
+AS $$
+	DECLARE
+		dia ALIAS FOR $1;
+		nCarteira ALIAS FOR $2;
+		soma Caixa.ValorFechamento%type := 0;
+		valor Caixa.ValorFechamento%type;
+		curs REFCURSOR;
+	BEGIN
+		OPEN curs FOR SELECT ValorFechamento FROM Caixa WHERE DataFechamento = dia and NCTPS = nCarteira;
+		FETCH curs INTO valor;
+		WHILE FOUND LOOP
+			soma := soma + valor;
+			FETCH curs INTO valor;
+		END LOOP;
+		CLOSE curs;
+		RETURN soma;
+	END
+$$
+LANGUAGE PLPGSQL;
+
+
+
+
+
